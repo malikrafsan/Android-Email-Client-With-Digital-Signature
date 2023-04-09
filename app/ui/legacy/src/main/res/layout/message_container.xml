@@ -6,12 +6,81 @@
     android:layout_height="match_parent">
 
     <!-- Content area -->
-    <com.fsck.k9.view.MessageWebView
-        android:id="@+id/message_content"
+
+    <LinearLayout
         android:layout_height="wrap_content"
-        android:layout_width="fill_parent" />
+        android:layout_width="match_parent"
+        android:layout_marginLeft="12dip"
+        android:layout_marginRight="12dip"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:minHeight="50dp">
+
+        <EditText
+            android:id="@+id/key_dekrip"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
+            android:hint="Key Dekrip"
+            android:inputType="textEmailSubject|textAutoCorrect|textCapSentences"
+            android:imeOptions="actionNext|flagNoExtractUi"
+            android:singleLine="true"
+            android:background="@android:color/transparent"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            style="@style/ComposeEditTextLarge"
+            />
+
+        <Button
+            android:id="@+id/dekrip_email"
+            android:layout_width="110dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:text="Dekrip" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_marginLeft="12dip"
+        android:layout_marginRight="12dip"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:minHeight="50dp">
+
+        <EditText
+            android:id="@+id/validate_signature"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
+            android:hint="Validate Signature"
+            android:inputType="textEmailSubject|textAutoCorrect|textCapSentences"
+            android:imeOptions="actionNext|flagNoExtractUi"
+            android:singleLine="true"
+            android:background="@android:color/transparent"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            style="@style/ComposeEditTextLarge"
+            />
+
+        <Button
+            android:id="@+id/validate_email"
+            android:layout_width="110dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:text="Validate" />
+    </LinearLayout>
 
     <!-- Unsigned content area -->
+    <com.fsck.k9.view.MessageWebView
+        android:id="@+id/message_content"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -30,11 +99,10 @@
 
             <View
                 android:layout_width="16dp"
-                android:layout_height="4dp"
-                android:layout_marginTop="1dp"
+                android:layout_height="3dp"
                 android:layout_gravity="center_vertical"
-                android:background="#d55"
-                />
+                android:layout_marginTop="1dp"
+                android:background="#d55" />
 
             <TextView
                 android:layout_height="wrap_content"
