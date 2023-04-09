@@ -38,6 +38,62 @@
                 />
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_marginLeft="12dip"
+            android:layout_marginRight="12dip"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:minHeight="50dp">
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchcompat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Enkrip message? "
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp" />
+
+            <EditText
+                android:id="@+id/key_enkrip"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:hint="Key Enkrip"
+                android:inputType="textEmailSubject|textAutoCorrect|textCapSentences"
+                android:imeOptions="actionNext|flagNoExtractUi"
+                android:singleLine="true"
+                android:background="@android:color/transparent"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                style="@style/ComposeEditTextLarge"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_marginLeft="12dip"
+            android:layout_marginRight="12dip"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:minHeight="50dp">
+
+            <EditText
+                android:id="@+id/key_signature"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:hint="Key signature"
+                android:inputType="textEmailSubject|textAutoCorrect|textCapSentences"
+                android:imeOptions="actionNext|flagNoExtractUi"
+                android:singleLine="true"
+                android:background="@android:color/transparent"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                style="@style/ComposeEditTextLarge"
+                />
+        </LinearLayout>
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
