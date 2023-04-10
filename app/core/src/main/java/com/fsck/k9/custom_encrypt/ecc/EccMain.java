@@ -32,7 +32,7 @@ public class EccMain {
 
     public EccSignature sign(BigInteger privateKey, byte[] data) throws Exception {
         EccKeyPair keyPair = EccGenerator.INSTANCE.newInstance(privateKey, this.curve);
-        return EccSign.INSTANCE.signData(keyPair, data, EccSha256.INSTANCE);
+        return EccSign.INSTANCE.signData(keyPair, data, this.hasher);
     }
 
     public boolean validate(String strPublicKey, String str, String strSignature) throws Exception {
