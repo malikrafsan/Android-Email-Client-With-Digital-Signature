@@ -17,6 +17,15 @@ public class EccMain {
         return EccGenerator.INSTANCE.newInstance(this.curve);
     }
 
+    public EccCurve getCurve() {
+        return this.curve;
+    }
+
+    public EccSignature sign(String privateKey, String str) throws Exception {
+        BigInteger biPrivateKey = new BigInteger(privateKey);
+        return this.sign(biPrivateKey, str);
+    }
+
     public EccSignature sign(BigInteger privateKey, String str) throws Exception {
         return this.sign(privateKey, str.getBytes());
     }

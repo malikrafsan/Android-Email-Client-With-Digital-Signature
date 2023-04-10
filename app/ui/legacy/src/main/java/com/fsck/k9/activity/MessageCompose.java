@@ -2,6 +2,7 @@ package com.fsck.k9.activity;
 
 
 import java.io.File;
+import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import androidx.annotation.StringRes;
 import androidx.appcompat.app.ActionBar;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
@@ -79,6 +81,7 @@ import com.fsck.k9.controller.MessagingController;
 import com.fsck.k9.controller.MessagingListener;
 import com.fsck.k9.controller.SimpleMessagingListener;
 import com.fsck.k9.custom_encrypt.ecc.EccMain;
+import com.fsck.k9.custom_encrypt.ecc.EccPoint;
 import com.fsck.k9.fragment.AttachmentDownloadDialogFragment;
 import com.fsck.k9.fragment.AttachmentDownloadDialogFragment.AttachmentDownloadCancelListener;
 import com.fsck.k9.fragment.ProgressDialogFragment;
@@ -345,22 +348,70 @@ public class MessageCompose extends K9Activity implements OnClickListener,
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 changesMadeSinceLastSave = true;
-                try {
-                    var keyPair = EccMain.INSTANCE.generateKeys();
-                    var publicKey = keyPair.getPublicKey();
-                    var privateKey = keyPair.getPrivateKey();
+                String txt = s.toString();
+                String TAG = "TEST-ENCRYPT";
 
-                    String message = "Malik Akbar";
+                if (txt.equals("Valid")) {
+                    try {
+                        var keyPair = EccMain.INSTANCE.generateKeys();
+                        var publicKey = keyPair.getPublicKey();
+                        var privateKey = keyPair.getPrivateKey();
 
-                    var signature = EccMain.INSTANCE.sign(privateKey,message);
-                    var strSignature = signature.toString();
-                    var strPublicKey = publicKey.toString();
+                        String message = "Malik Akbar";
+                        String strPrivateKey = privateKey.toString();
 
-                    var valid = EccMain.INSTANCE.validate(strPublicKey, message, strSignature);
-                    var str = "Valid? " + (valid ? "Yes" : "No");
-                    Toast.makeText(themeContext, str, Toast.LENGTH_LONG).show();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                        var signature = EccMain.INSTANCE.sign(strPrivateKey,message);
+                        var strSignature = signature.toString();
+                        var strPublicKey = publicKey.toString();
+
+                        var valid = EccMain.INSTANCE.validate(strPublicKey, message, strSignature);
+                        var str = "Valid? " + (valid ? "Yes" : "No");
+                        Toast.makeText(themeContext, str, Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Timber.tag(TAG).d(e.toString());
+                        Toast.makeText(themeContext, "Encryption Scheme is failed", Toast.LENGTH_LONG).show();
+                    }
+                } else if (txt.equals("InvalidPrivateKey")) {
+                    try {
+                        var keyPair = EccMain.INSTANCE.generateKeys();
+                        var publicKey = keyPair.getPublicKey();
+                        var privateKey = keyPair.getPrivateKey();
+
+                        String message = "Malik Akbar";
+                        String strPrivateKey = privateKey.add(BigInteger.ONE).toString();
+
+                        var signature = EccMain.INSTANCE.sign(strPrivateKey,message);
+                        var strSignature = signature.toString();
+                        var strPublicKey = publicKey.toString();
+
+                        var valid = EccMain.INSTANCE.validate(strPublicKey, message, strSignature);
+                        var str = "Valid? " + (valid ? "Yes" : "No");
+                        Toast.makeText(themeContext, str, Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Timber.tag(TAG).d(e.toString());
+                        Toast.makeText(themeContext, "Encryption Scheme is failed", Toast.LENGTH_LONG).show();
+                        //Toast.makeText(themeContext, e.toString(), Toast.LENGTH_LONG).show();
+                    }
+                } else if (txt.equals("InvalidPublicKey")) {
+                    try {
+                        var keyPair = EccMain.INSTANCE.generateKeys();
+                        var publicKey = keyPair.getPublicKey();
+                        var privateKey = keyPair.getPrivateKey();
+
+                        String message = "Malik Akbar";
+                        String strPrivateKey = privateKey.toString();
+
+                        var signature = EccMain.INSTANCE.sign(strPrivateKey,message);
+                        var strSignature = signature.toString();
+                        var strPublicKey = new EccPoint(publicKey.getX().add(BigInteger.ONE), publicKey.getY().subtract(BigInteger.ONE), EccMain.INSTANCE.getCurve()).toString(); //publicKey.toString();
+
+                        var valid = EccMain.INSTANCE.validate(strPublicKey, message, strSignature);
+                        var str = "Valid? " + (valid ? "Yes" : "No");
+                        Toast.makeText(themeContext, str, Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Timber.tag(TAG).d(e.toString());
+                        Toast.makeText(themeContext, e.toString(), Toast.LENGTH_LONG).show();
+                    }
                 }
             }
         });
