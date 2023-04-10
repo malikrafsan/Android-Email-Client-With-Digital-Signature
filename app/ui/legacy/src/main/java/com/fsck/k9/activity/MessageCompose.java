@@ -2,6 +2,7 @@ package com.fsck.k9.activity;
 
 
 import java.io.File;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -77,6 +78,7 @@ import com.fsck.k9.controller.MessageReference;
 import com.fsck.k9.controller.MessagingController;
 import com.fsck.k9.controller.MessagingListener;
 import com.fsck.k9.controller.SimpleMessagingListener;
+import com.fsck.k9.custom_encrypt.ecc.EccMain;
 import com.fsck.k9.fragment.AttachmentDownloadDialogFragment;
 import com.fsck.k9.fragment.AttachmentDownloadDialogFragment.AttachmentDownloadCancelListener;
 import com.fsck.k9.fragment.ProgressDialogFragment;
@@ -339,6 +341,29 @@ public class MessageCompose extends K9Activity implements OnClickListener,
 
         messageContentView = findViewById(R.id.message_content);
         messageContentView.getInputExtras(true).putBoolean("allowEmoji", true);
+        messageContentView.addTextChangedListener(new SimpleTextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                changesMadeSinceLastSave = true;
+                try {
+                    var keyPair = EccMain.INSTANCE.generateKeys();
+                    var publicKey = keyPair.getPublicKey();
+                    var privateKey = keyPair.getPrivateKey();
+
+                    String message = "Malik Akbar";
+
+                    var signature = EccMain.INSTANCE.sign(privateKey,message);
+                    var strSignature = signature.toString();
+                    var strPublicKey = publicKey.toString();
+
+                    var valid = EccMain.INSTANCE.validate(strPublicKey, message, strSignature);
+                    var str = "Valid? " + (valid ? "Yes" : "No");
+                    Toast.makeText(themeContext, str, Toast.LENGTH_LONG).show();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
 
         attachmentsView = findViewById(R.id.attachments);
 
