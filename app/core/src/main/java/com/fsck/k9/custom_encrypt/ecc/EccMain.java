@@ -3,6 +3,9 @@ package com.fsck.k9.custom_encrypt.ecc;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 
+import com.fsck.k9.keccak.KeccakHash;
+
+
 public class EccMain {
     public static final EccMain INSTANCE;
     private EccCurve curve;
@@ -10,7 +13,8 @@ public class EccMain {
 
     private EccMain() {
         this.curve = Secp256k1.INSTANCE;
-        this.hasher = EccSha256.INSTANCE;
+        // this.hasher = EccSha256.INSTANCE;
+        this.hasher = KeccakHash.INSTANCE;
     }
 
     public EccKeyPair generateKeys() {
