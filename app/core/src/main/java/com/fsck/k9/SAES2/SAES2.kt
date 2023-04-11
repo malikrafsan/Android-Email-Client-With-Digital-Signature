@@ -1,14 +1,13 @@
 package com.fsck.k9.SAES2
-
 import java.math.BigInteger
 import java.util.Base64
 
-class SAES2 (val rawMasterKey: String) {
-    val blockSize = 16
-    val keySize = 16
-    var masterKey: BigInteger
-    var roundKeys : ArrayList<ArrayList<Int>> = ArrayList()
-    val sBox: IntArray = intArrayOf(
+class SAES2 (rawMasterKey: String) {
+    private val blockSize = 16
+    private val keySize = 16
+    private var masterKey: BigInteger
+    private var roundKeys : ArrayList<ArrayList<Int>> = ArrayList()
+    private val sBox: IntArray = intArrayOf(
         0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
         0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
         0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15,
@@ -26,7 +25,7 @@ class SAES2 (val rawMasterKey: String) {
         0xE1, 0xF8, 0x98, 0x11, 0x69, 0xD9, 0x8E, 0x94, 0x9B, 0x1E, 0x87, 0xE9, 0xCE, 0x55, 0x28, 0xDF,
         0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16,
     )
-    val invSBox: IntArray = intArrayOf(
+    private val invSBox: IntArray = intArrayOf(
         0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38, 0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB,
         0x7C, 0xE3, 0x39, 0x82, 0x9B, 0x2F, 0xFF, 0x87, 0x34, 0x8E, 0x43, 0x44, 0xC4, 0xDE, 0xE9, 0xCB,
         0x54, 0x7B, 0x94, 0x32, 0xA6, 0xC2, 0x23, 0x3D, 0xEE, 0x4C, 0x95, 0x0B, 0x42, 0xFA, 0xC3, 0x4E,
@@ -44,28 +43,27 @@ class SAES2 (val rawMasterKey: String) {
         0xA0, 0xE0, 0x3B, 0x4D, 0xAE, 0x2A, 0xF5, 0xB0, 0xC8, 0xEB, 0xBB, 0x3C, 0x83, 0x53, 0x99, 0x61,
         0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D,
     )
-    val rCon: IntArray = intArrayOf(
+    private val rCon: IntArray = intArrayOf(
         0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40,
         0x80, 0x1B, 0x36, 0x6C, 0xD8, 0xAB, 0x4D, 0x9A,
         0x2F, 0x5E, 0xBC, 0x63, 0xC6, 0x97, 0x35, 0x6A,
         0xD4, 0xB3, 0x7D, 0xFA, 0xEF, 0xC5, 0x91, 0x39,
     )
-    var buffer : Array<BigInteger> = arrayOf()
-    var plainState : ArrayList<ArrayList<Int>> = ArrayList()
-    var playfairKey : ArrayList<ArrayList<Char>> = ArrayList()
+    private var buffer : Array<BigInteger> = arrayOf()
+    private var stateMatrix : ArrayList<ArrayList<Int>> = ArrayList()
+    private var playfairKey : ArrayList<ArrayList<Char>> = ArrayList()
 
     init {
-        println("SAES2 initialized")
         masterKey = rawMasterKey.convertStringToBigInt()
         changeKey(masterKey)
     }
 
     fun encrypt(msg: String): String {
-        val encoded_msg = msg.toByteArray(Charsets.UTF_8)
-        val plain_text = padMessage(encoded_msg)
+        val encodecMsg = msg.toByteArray(Charsets.UTF_8)
+        val plainText = padMessage(encodecMsg)
 
-        var blockNums = plain_text.size / blockSize
-        if (plain_text.size % blockSize != 0) {
+        var blockNums = plainText.size / blockSize
+        if (plainText.size % blockSize != 0) {
             blockNums += 1
         }
 
@@ -73,8 +71,8 @@ class SAES2 (val rawMasterKey: String) {
         for (i in 0 until blockNums) {
             buffer[i] = 0.toBigInteger()
 
-            val block = plain_text.copyOfRange(i * blockSize, (i + 1) * blockSize)
-            buffer[i] = _encrypt(block.convertToBigInt())
+            val block = plainText.copyOfRange(i * blockSize, (i + 1) * blockSize)
+            buffer[i] = startEncrypt(block.convertToBigInt())
 
             if (i == 0) {
                 buffer[i] = buffer[i] xor masterKey
@@ -86,8 +84,23 @@ class SAES2 (val rawMasterKey: String) {
         return bufferToText()
     }
 
-    fun decrypt(msg: String) {
+    fun decrypt(msg: String): String {
+        val decodedMsg = Base64.getDecoder().decode(msg)
+        val chunks = splitIntoChunks(decodedMsg)
+        var result = ""
 
+        for (i in chunks.indices) {
+            if (i == 0) {
+                buffer[i] = buffer[i] xor masterKey
+            } else {
+                buffer[i] = buffer[i] xor chunks[i - 1]
+            }
+
+            buffer[i] = startDecrypt(buffer[i])
+            result += buffer[i].toByteArray().toString(Charsets.UTF_8)
+        }
+
+        return unPadMessage(result)
     }
 
     private fun bufferToText(): String {
@@ -100,8 +113,8 @@ class SAES2 (val rawMasterKey: String) {
         return Base64.getEncoder().encode(bytesArray).toString(Charsets.UTF_8)
     }
 
-    private fun _encrypt(plain_text: BigInteger): BigInteger {
-        plainState = textToMatrix(plain_text)
+    private fun startEncrypt(plainText: BigInteger): BigInteger {
+        stateMatrix = textToMatrix(plainText)
         addRoundKey(roundKeys.slice(0 until 4))
 
         for (i in 1 until 10) {
@@ -112,7 +125,22 @@ class SAES2 (val rawMasterKey: String) {
         shiftRows()
         addRoundKey(roundKeys.slice(40 until 44))
 
-        return matrixToText(plainState)
+        return matrixToText(stateMatrix)
+    }
+
+    private fun startDecrypt(cipherText: BigInteger): BigInteger {
+        stateMatrix = textToMatrix(cipherText)
+        addRoundKey(roundKeys.slice(40 until 44))
+        invShiftRows()
+        invSubBytes()
+
+        for (i in 9 downTo 1) {
+            roundDecrypt(roundKeys.slice(4*i until 4*(i+1)), i)
+        }
+
+        addRoundKey(roundKeys.slice(0 until 4))
+
+        return matrixToText(stateMatrix)
     }
 
     private fun roundEncrypt(keyMatrix: List<ArrayList<Int>>, round: Int) {
@@ -123,10 +151,18 @@ class SAES2 (val rawMasterKey: String) {
         encryptPlayfair(keyMatrix, round)
     }
 
+    private fun roundDecrypt(keyMatrix: List<ArrayList<Int>>, round: Int) {
+        decryptPlayfair(keyMatrix, round)
+        addRoundKey(keyMatrix)
+        invMixColumns()
+        invShiftRows()
+        invSubBytes()
+    }
+
     private fun addRoundKey(round: List<ArrayList<Int>>) {
         for (i in 0 until 4) {
             for (j in 0 until 4) {
-                plainState[i][j] = plainState[i][j] xor round[i][j]
+                stateMatrix[i][j] = stateMatrix[i][j] xor round[i][j]
             }
         }
     }
@@ -134,36 +170,74 @@ class SAES2 (val rawMasterKey: String) {
     private fun subBytes() {
         for (i in 0 until 4) {
             for (j in 0 until 4) {
-                plainState[i][j] = sBox[plainState[i][j]]
+                stateMatrix[i][j] = sBox[stateMatrix[i][j]]
+            }
+        }
+    }
+
+    private fun invSubBytes() {
+        for (i in 0 until 4) {
+            for (j in 0 until 4) {
+                stateMatrix[i][j] = invSBox[stateMatrix[i][j]]
             }
         }
     }
 
     private fun shiftRows() {
-        plainState[0][1] = plainState[1][1].also { plainState[1][1] = plainState[2][1].also { plainState[2][1] = plainState[3][1].also { plainState[3][1] = plainState[0][1] } } }
-        plainState[0][2] = plainState[2][2].also { plainState[1][2] = plainState[3][2].also { plainState[2][2] = plainState[0][2].also { plainState[3][2] = plainState[1][2] } } }
-        plainState[0][3] = plainState[3][3].also { plainState[1][3] = plainState[0][3].also { plainState[2][3] = plainState[1][3].also { plainState[3][3] = plainState[2][3] } } }
+        stateMatrix[0][1] = stateMatrix[1][1].also { stateMatrix[1][1] = stateMatrix[2][1].also { stateMatrix[2][1] = stateMatrix[3][1].also { stateMatrix[3][1] = stateMatrix[0][1] } } }
+        stateMatrix[0][2] = stateMatrix[2][2].also { stateMatrix[1][2] = stateMatrix[3][2].also { stateMatrix[2][2] = stateMatrix[0][2].also { stateMatrix[3][2] = stateMatrix[1][2] } } }
+        stateMatrix[0][3] = stateMatrix[3][3].also { stateMatrix[1][3] = stateMatrix[0][3].also { stateMatrix[2][3] = stateMatrix[1][3].also { stateMatrix[3][3] = stateMatrix[2][3] } } }
+    }
+
+    private fun invShiftRows() {
+        stateMatrix[0][1] = stateMatrix[3][1].also { stateMatrix[1][1] = stateMatrix[0][1].also { stateMatrix[2][1] = stateMatrix[1][1].also { stateMatrix[3][1] = stateMatrix[2][1] } } }
+        stateMatrix[0][2] = stateMatrix[2][2].also { stateMatrix[1][2] = stateMatrix[3][2].also { stateMatrix[2][2] = stateMatrix[0][2].also { stateMatrix[3][2] = stateMatrix[1][2] } } }
+        stateMatrix[0][3] = stateMatrix[1][3].also { stateMatrix[1][3] = stateMatrix[2][3].also { stateMatrix[2][3] = stateMatrix[3][3].also { stateMatrix[3][3] = stateMatrix[0][3] } } }
     }
 
     private fun mixColumns() {
         var t: Int
         var u: Int
         for (i in 0 until 4) {
-            t = plainState[i][0] xor plainState[i][1] xor plainState[i][2] xor plainState[i][3]
-            u = plainState[i][0]
+            t = stateMatrix[i][0] xor stateMatrix[i][1] xor stateMatrix[i][2] xor stateMatrix[i][3]
+            u = stateMatrix[i][0]
 
-            plainState[i][0] = plainState[i][0] xor t xor xTime(plainState[i][0] xor plainState[i][1])
-            plainState[i][1] = plainState[i][1] xor t xor xTime(plainState[i][1] xor plainState[i][2])
-            plainState[i][2] = plainState[i][2] xor t xor xTime(plainState[i][2] xor plainState[i][3])
-            plainState[i][3] = plainState[i][3] xor t xor xTime(plainState[i][3] xor u)
+            stateMatrix[i][0] = stateMatrix[i][0] xor t xor xTime(stateMatrix[i][0] xor stateMatrix[i][1])
+            stateMatrix[i][1] = stateMatrix[i][1] xor t xor xTime(stateMatrix[i][1] xor stateMatrix[i][2])
+            stateMatrix[i][2] = stateMatrix[i][2] xor t xor xTime(stateMatrix[i][2] xor stateMatrix[i][3])
+            stateMatrix[i][3] = stateMatrix[i][3] xor t xor xTime(stateMatrix[i][3] xor u)
         }
+    }
+
+    private fun invMixColumns() {
+        var u: Int
+        var v: Int
+        for (i in 0 until 4) {
+            u = xTime(xTime(stateMatrix[i][0] xor stateMatrix[i][2]))
+            v = xTime(xTime(stateMatrix[i][1] xor stateMatrix[i][3]))
+
+            stateMatrix[i][0] = stateMatrix[i][0] xor u
+            stateMatrix[i][1] = stateMatrix[i][1] xor v
+            stateMatrix[i][2] = stateMatrix[i][2] xor u
+            stateMatrix[i][3] = stateMatrix[i][3] xor v
+        }
+        mixColumns()
     }
 
     private fun encryptPlayfair(keyMatrix: List<ArrayList<Int>>, round: Int) {
         makePlayfairKey(keyMatrix, round)
         for (i in 0 until 4) {
             for (j in 0 until 4) {
-                plainState[i][j] = changeByteEncrypt(plainState[i][j])
+                stateMatrix[i][j] = changeByteEncrypt(stateMatrix[i][j])
+            }
+        }
+    }
+
+    private fun decryptPlayfair(keyMatrix: List<ArrayList<Int>>, round: Int) {
+        makePlayfairKey(keyMatrix, round)
+        for (i in 0 until 4) {
+            for (j in 0 until 4) {
+                stateMatrix[i][j] = changeByteDecrypt(stateMatrix[i][j])
             }
         }
     }
@@ -181,7 +255,7 @@ class SAES2 (val rawMasterKey: String) {
         val possibleKey = ArrayList("0123456789abcdef".toList())
         val cRow = keyMatrix[round % 4]
 
-        var isian = arrayListOf<Char>()
+        val isian = arrayListOf<Char>()
 
         for (i in 0 until 4) {
             val hexa = cRow[i].toString(16)
@@ -262,6 +336,57 @@ class SAES2 (val rawMasterKey: String) {
         return c.toInt(16)
     }
 
+    private fun changeByteDecrypt(num: Int): Int {
+        val hexa = num.toString(16)
+        var c = ""
+        val firstByte: Char
+        val secondByte: Char
+
+        if (hexa.length == 1) {
+            firstByte = '0'
+            secondByte = hexa[0]
+        } else {
+            firstByte = hexa[0]
+            secondByte = hexa[1]
+        }
+
+        val firstLoc = intArrayOf(0, 0)
+        val secondLoc = intArrayOf(0, 0)
+
+        // find character location
+        for (i in 0 until 4) {
+            for (j in 0 until 4) {
+                if (playfairKey[i][j] == firstByte) {
+                    firstLoc[0] = i
+                    firstLoc[1] = j
+                }
+                if (playfairKey[i][j] == secondByte) {
+                    secondLoc[0] = i
+                    secondLoc[1] = j
+                }
+            }
+        }
+
+        // replacing
+        if (firstLoc[0] == secondLoc[0]) {
+            c += playfairKey[firstLoc[0]][(firstLoc[1] + 3) % 4]
+            c += playfairKey[secondLoc[0]][(secondLoc[1] + 3) % 4]
+        } else if (firstLoc[1] == secondLoc[1]) {
+            c += playfairKey[(firstLoc[0] + 3) % 4][firstLoc[1]]
+            c += playfairKey[(secondLoc[0] + 3) % 4][secondLoc[1]]
+        } else {
+            c += playfairKey[firstLoc[0]][secondLoc[1]]
+            c += playfairKey[secondLoc[0]][firstLoc[1]]
+        }
+
+        return c.toInt(16)
+    }
+
+    private fun splitIntoChunks(byteArray: ByteArray): List<BigInteger> {
+        val chunks = byteArray.asList().chunked(blockSize)
+        return chunks.map { chunk -> chunk.toByteArray().convertToBigInt() }
+    }
+
     private fun xTime(a: Int): Int {
         return if (a and 0x80 != 0) {
             ((a shl 1) xor 0x1B) and 0xFF
@@ -270,20 +395,24 @@ class SAES2 (val rawMasterKey: String) {
         }
     }
 
-    private fun padMessage(plain_text: ByteArray): ByteArray {
-        val paddingNumber = blockSize - (plain_text.size % blockSize)
+    private fun padMessage(plainText: ByteArray): ByteArray {
+        val paddingNumber = blockSize - (plainText.size % blockSize)
         val asciiPadding = paddingNumber.toChar()
         var paddString = ""
         for (i in 0 until paddingNumber) {
             paddString += asciiPadding
         }
 
-        val paddedText = plain_text + paddString.toByteArray(Charsets.UTF_8)
-        return paddedText
+        return plainText + paddString.toByteArray(Charsets.UTF_8)
+    }
+
+    private fun unPadMessage(msg: String): String {
+        val paddingNumber = msg[msg.length - 1].code
+        return msg.substring(0, msg.length - paddingNumber)
     }
 
     private fun String.convertStringToBigInt(): BigInteger {
-        var byteArray = this.toByteArray(Charsets.UTF_8)
+        val byteArray = this.toByteArray(Charsets.UTF_8)
         if (byteArray.size != keySize) {
             throw Error("Key size mismatch, must be 16 bytes")
         }
@@ -298,7 +427,7 @@ class SAES2 (val rawMasterKey: String) {
         roundKeys =  textToMatrix(key)
 
         for (i in 4..43) {
-            roundKeys.add(ArrayList<Int>())
+            roundKeys.add(ArrayList())
             var byte : Int
             if (i % 4 == 0) {
                 byte = roundKeys[i - 4][0] xor sBox[roundKeys[i - 1][1]] xor rCon[i / 4]
@@ -318,11 +447,11 @@ class SAES2 (val rawMasterKey: String) {
     }
 
     private fun textToMatrix(text: BigInteger): ArrayList<ArrayList<Int>> {
-        var matrix : ArrayList<ArrayList<Int>> = ArrayList()
+        val matrix : ArrayList<ArrayList<Int>> = ArrayList()
         for (i in 0..15) {
-            var byte = ((text shr (8 * (15 - i))) and BigInteger("FF", 16)).toInt()
+            val byte = ((text shr (8 * (15 - i))) and BigInteger("FF", 16)).toInt()
             if (i % 4 == 0) {
-                matrix.add(ArrayList<Int>())
+                matrix.add(ArrayList())
             }
             matrix[i / 4].add(byte)
         }
