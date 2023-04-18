@@ -85,23 +85,27 @@ class SAES2 (rawMasterKey: String) {
     }
 
     fun decrypt(msg: String): String {
-        val decodedMsg = Base64.getDecoder().decode(msg)
-        val chunks = splitIntoChunks(decodedMsg)
-        var result = ""
+            val decodedMsg = Base64.getDecoder().decode(msg)
+            val chunks = splitIntoChunks(decodedMsg)
+            buffer = chunks.toTypedArray()
+            var result = ""
 
-        for (i in chunks.indices) {
-            if (i == 0) {
-                buffer[i] = buffer[i] xor masterKey
-            } else {
-                buffer[i] = buffer[i] xor chunks[i - 1]
+            for (i in chunks.indices) {
+                if (i < buffer.size) {
+                    if (i == 0) {
+                        buffer[i] = buffer[i] xor masterKey
+                    } else {
+                        buffer[i] = buffer[i] xor chunks[i - 1]
+                    }
+
+                    buffer[i] = startDecrypt(buffer[i])
+                    result += buffer[i].toByteArray().toString(Charsets.UTF_8)
+                }
             }
 
-            buffer[i] = startDecrypt(buffer[i])
-            result += buffer[i].toByteArray().toString(Charsets.UTF_8)
+            return unPadMessage(result)
         }
 
-        return unPadMessage(result)
-    }
 
     private fun bufferToText(): String {
         var bytesArray = buffer[0].toByteArray()

@@ -48,6 +48,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Button;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
@@ -81,6 +82,7 @@ import com.fsck.k9.controller.MessagingController;
 import com.fsck.k9.controller.MessagingListener;
 import com.fsck.k9.controller.SimpleMessagingListener;
 import com.fsck.k9.custom_encrypt.ecc.EccMain;
+import com.fsck.k9.SAES2.SAES2;
 import com.fsck.k9.custom_encrypt.ecc.EccPoint;
 import com.fsck.k9.fragment.AttachmentDownloadDialogFragment;
 import com.fsck.k9.fragment.AttachmentDownloadDialogFragment.AttachmentDownloadCancelListener;
@@ -126,6 +128,7 @@ import org.jetbrains.annotations.NotNull;
 import org.openintents.openpgp.OpenPgpApiManager;
 import org.openintents.openpgp.util.OpenPgpApi;
 import timber.log.Timber;
+import android.widget.CompoundButton;
 
 
 @SuppressWarnings("deprecation") // TODO get rid of activity dialogs and indeterminate progress bars
@@ -235,6 +238,17 @@ public class MessageCompose extends K9Activity implements OnClickListener,
     private EditText subjectView;
     private EditText signatureView;
     private EditText messageContentView;
+    private Button generateSignature;
+    private EditText keyPublicSignature;
+
+    private EditText keyEnkrip;
+
+    private androidx.appcompat.widget.SwitchCompat switchIsEnkrip;
+    private androidx.appcompat.widget.SwitchCompat signEmail;
+
+    private EditText keyDekrip;
+
+    private androidx.appcompat.widget.SwitchCompat switchIsDekrip;
     private LinearLayout attachmentsView;
 
     private String referencedMessageIds;
@@ -342,6 +356,54 @@ public class MessageCompose extends K9Activity implements OnClickListener,
         attachmentPresenter = new AttachmentPresenter(getApplicationContext(), attachmentMvpView,
                 getSupportLoaderManager(), this);
 
+        keyEnkrip = findViewById(R.id.key_enkrip);
+        keyEnkrip.setVisibility(View.INVISIBLE);
+
+        switchIsEnkrip = findViewById(R.id.switchenkrip);
+
+        switchIsEnkrip.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                keyEnkrip.setVisibility(isChecked ? View.VISIBLE : View.INVISIBLE);
+            }
+        });
+
+        generateSignature = findViewById(R.id.generate_signature);
+        generateSignature.setVisibility(View.INVISIBLE);
+        keyPublicSignature = findViewById(R.id.key_public_signature);
+        keyPublicSignature.setVisibility(View.INVISIBLE);
+
+        signEmail = findViewById(R.id.sign_email);
+        generateSignature.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    var keyPair = EccMain.INSTANCE.generateKeys();
+                    var publicKey = keyPair.getPublicKey();
+                    var privateKey = keyPair.getPrivateKey();
+                    String strPrivateKey = privateKey.toString();
+                    android.util.Log.v("Key public? ", publicKey.toString());
+                    android.util.Log.v("Key private? ", privateKey.toString());
+                    //String strPrivateKey = keyPublicSignature.getText().toString();
+
+                    String message = messageContentView.getText().toString();
+
+                    var signature = EccMain.INSTANCE.sign(strPrivateKey,message.trim());
+                    var strSignature = signature.toString();
+                    message = message + "\n" + "\n" + "<span>" + strSignature + "</span>";
+                    messageContentView.setText(CrLfConverter.toLf(message));
+                } catch (Exception e) {
+                    Toast.makeText(themeContext, "Masukkan private key yang benar!", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+        signEmail.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                keyPublicSignature.setVisibility(isChecked ? View.VISIBLE : View.INVISIBLE);
+                generateSignature.setVisibility(isChecked ? View.VISIBLE : View.INVISIBLE);
+            }
+        });
+
         messageContentView = findViewById(R.id.message_content);
         messageContentView.getInputExtras(true).putBoolean("allowEmoji", true);
         messageContentView.addTextChangedListener(new SimpleTextWatcher() {
@@ -356,6 +418,8 @@ public class MessageCompose extends K9Activity implements OnClickListener,
                         var keyPair = EccMain.INSTANCE.generateKeys();
                         var publicKey = keyPair.getPublicKey();
                         var privateKey = keyPair.getPrivateKey();
+                        android.util.Log.v("Key public? ", publicKey.toString());
+                        android.util.Log.v("Key private? ", privateKey.toString());
 
                         String message = "Malik Akbar";
                         String strPrivateKey = privateKey.toString();
@@ -623,6 +687,7 @@ public class MessageCompose extends K9Activity implements OnClickListener,
              */
             CharSequence text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
             // Only use EXTRA_TEXT if the body hasn't already been set by the mailto URI
+
             if (text != null && messageContentView.getText().length() == 0) {
                 messageContentView.setText(CrLfConverter.toLf(text));
             }
@@ -790,8 +855,35 @@ public class MessageCompose extends K9Activity implements OnClickListener,
             builder = SimpleMessageBuilder.newInstance();
             recipientPresenter.builderSetProperties(builder);
         }
-
-        builder.setSubject(Utility.stripNewLines(subjectView.getText().toString()))
+        keyEnkrip = findViewById(R.id.key_enkrip);
+        Log.v("Key enkrip: ", "MASUKK");
+        if(keyEnkrip.getVisibility() == View.VISIBLE) {
+            var saes2 = new SAES2("abcdefghij123456");
+            var enkrip = saes2.encrypt(messageContentView.getText().toString());
+            Log.v("Key enkrip: ", enkrip);
+            Log.v("Pesan: ", messageContentView.getText().toString());
+            builder.setSubject(Utility.stripNewLines(subjectView.getText().toString()))
+                .setSentDate(new Date())
+                .setHideTimeZone(K9.isHideTimeZone())
+                .setInReplyTo(repliedToMessageId)
+                .setReferences(referencedMessageIds)
+                .setRequestReadReceipt(requestReadReceipt)
+                .setIdentity(identity)
+                .setReplyTo(replyToPresenter.getAddresses())
+                .setMessageFormat(currentMessageFormat)
+                .setText(enkrip)
+                .setAttachments(attachmentPresenter.getAttachments())
+                .setInlineAttachments(attachmentPresenter.getInlineAttachments())
+                .setSignature(CrLfConverter.toCrLf(signatureView.getText()))
+                .setSignatureBeforeQuotedText(account.isSignatureBeforeQuotedText())
+                .setIdentityChanged(identityChanged)
+                .setSignatureChanged(signatureChanged)
+                .setCursorPosition(messageContentView.getSelectionStart())
+                .setMessageReference(relatedMessageReference)
+                .setDraft(isDraft)
+                .setIsPgpInlineEnabled(cryptoStatus.isPgpInlineModeEnabled());
+        } else {
+            builder.setSubject(Utility.stripNewLines(subjectView.getText().toString()))
                 .setSentDate(new Date())
                 .setHideTimeZone(K9.isHideTimeZone())
                 .setInReplyTo(repliedToMessageId)
@@ -811,6 +903,9 @@ public class MessageCompose extends K9Activity implements OnClickListener,
                 .setMessageReference(relatedMessageReference)
                 .setDraft(isDraft)
                 .setIsPgpInlineEnabled(cryptoStatus.isPgpInlineModeEnabled());
+        }
+
+
 
         quotedMessagePresenter.builderSetProperties(builder);
 

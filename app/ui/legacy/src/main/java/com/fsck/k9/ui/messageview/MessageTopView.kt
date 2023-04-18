@@ -13,6 +13,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -31,6 +32,7 @@ import com.fsck.k9.view.ThemeUtils
 import com.fsck.k9.view.ToolableViewAnimator
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+
 
 class MessageTopView(
     context: Context,
@@ -52,6 +54,14 @@ class MessageTopView(
     private lateinit var attachmentCallback: AttachmentViewCallback
     private lateinit var extraHeaderContainer: View
     private lateinit var showPicturesButton: Button
+
+    private lateinit var keyDekrip: EditText
+    private lateinit var buttonDekrip: Button
+    private lateinit var switchIsDekrip: androidx.appcompat.widget.SwitchCompat
+
+    private lateinit var keySignature: EditText
+    private lateinit var buttonValidateSignature: Button
+    private lateinit var switchIsValidate: androidx.appcompat.widget.SwitchCompat
 
     private var isShowingProgress = false
     private var showPicturesButtonClicked = false
@@ -78,6 +88,9 @@ class MessageTopView(
         setShowPicturesButtonListener()
 
         containerView = findViewById(R.id.message_container)
+
+
+
 
         hideHeaderView()
     }

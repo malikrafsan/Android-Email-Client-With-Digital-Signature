@@ -48,7 +48,7 @@
             android:minHeight="50dp">
 
             <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchcompat"
+                android:id="@+id/switchenkrip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Enkrip message? "
@@ -79,11 +79,38 @@
             android:orientation="horizontal"
             android:minHeight="50dp">
 
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/sign_email"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sign Email? "
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_marginLeft="12dip"
+            android:layout_marginRight="12dip"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:minHeight="50dp">
+
+            <Button
+                android:id="@+id/generate_signature"
+                android:text="Generate Signature"
+                android:maxWidth="150dp"
+                android:layout_width="wrap_content"
+                android:layout_marginRight="20dp"
+                android:layout_height="wrap_content" />
+
             <EditText
-                android:id="@+id/key_signature"
+                android:id="@+id/key_public_signature"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:hint="Key signature"
+                android:hint="Key private signature"
                 android:inputType="textEmailSubject|textAutoCorrect|textCapSentences"
                 android:imeOptions="actionNext|flagNoExtractUi"
                 android:singleLine="true"

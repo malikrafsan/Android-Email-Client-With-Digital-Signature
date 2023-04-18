@@ -18,13 +18,18 @@ import android.view.View.OnCreateContextMenuListener
 import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebView.HitTestResult
+import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ShareCompat.IntentBuilder
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
+import com.fsck.k9.SAES2.SAES2
+
 import com.fsck.k9.contact.ContactIntentHelper
+import com.fsck.k9.custom_encrypt.ecc.EccMain
 import com.fsck.k9.helper.ClipboardManager
 import com.fsck.k9.helper.Utility
 import com.fsck.k9.mail.Address
@@ -57,9 +62,20 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
     private lateinit var unsignedTextContainer: View
     private lateinit var unsignedTextDivider: View
     private lateinit var unsignedText: TextView
+    private lateinit var keyDekrip: EditText
+    private lateinit var buttonDekrip: Button
+    private lateinit var switchIsDekrip: androidx.appcompat.widget.SwitchCompat
+
+    private lateinit var keySignature: EditText
+    private lateinit var buttonValidateSignature: Button
+    private lateinit var switchIsValidate: androidx.appcompat.widget.SwitchCompat
 
     private var isShowingPictures = false
     private var currentHtmlText: String? = null
+    private var contentMessageHTML: String = ""
+    private var templateMessageHTML: String = ""
+    private var contentTanpaMark: String = ""
+    private var mark: String = ""
     private val attachmentViewMap = mutableMapOf<AttachmentViewInfo, AttachmentView>()
     private val attachments = mutableMapOf<Uri, AttachmentViewInfo>()
     private var attachmentCallback: AttachmentViewCallback? = null
@@ -87,6 +103,184 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
         unsignedTextContainer = findViewById(R.id.message_unsigned_container)
         unsignedTextDivider = findViewById(R.id.message_unsigned_divider)
         unsignedText = findViewById(R.id.message_unsigned_text)
+
+        keyDekrip = findViewById(R.id.key_dekrip);
+        keyDekrip.visibility = View.INVISIBLE;
+        buttonDekrip = findViewById(R.id.dekrip_email);
+        buttonDekrip.visibility = View.INVISIBLE;
+
+        switchIsDekrip = findViewById(R.id.switchdekrip);
+        switchIsDekrip.setOnCheckedChangeListener { buttonView, isChecked ->
+            if(isChecked) {
+                keyDekrip.visibility = View.VISIBLE;
+                buttonDekrip.visibility = View.VISIBLE;
+            } else {
+                keyDekrip.visibility = View.INVISIBLE;
+                buttonDekrip.visibility = View.INVISIBLE;
+            }
+        }
+
+        keySignature = findViewById(R.id.validate_signature);
+        keySignature.visibility = View.INVISIBLE;
+        buttonValidateSignature = findViewById(R.id.validate_email);
+        buttonValidateSignature.visibility = View.INVISIBLE;
+
+        switchIsValidate = findViewById(R.id.validate_receiver_signature);
+        switchIsValidate.setOnCheckedChangeListener { buttonView, isChecked ->
+            if(isChecked) {
+                keySignature.visibility = View.VISIBLE;
+                buttonValidateSignature.visibility = View.VISIBLE;
+            } else {
+                keySignature.visibility = View.INVISIBLE;
+                buttonValidateSignature.visibility = View.INVISIBLE;
+            }
+        }
+
+        buttonDekrip.setOnClickListener {
+            try {
+                var saes2 = SAES2("abcdefghij123456");
+                ParserHTMLText()
+                android.util.Log.v("Key apakah aman? ", contentMessageHTML);
+                // contentMessageHTML = saes2.decrypt(contentMessageHTML!!);
+                var temp = saes2.decrypt("QwfQAszOvG/xAAZNcCwbUA==");
+                android.util.Log.v("Hasil dekrip aman? ", temp!!);
+                android.util.Log.v("Hasil dekrip aman? ", contentMessageHTML!!);
+                android.util.Log.v("Key apakah aman? ", templateMessageHTML!!);
+                contentMessageHTML = temp;
+                appendMessage();
+                refreshDisplayedContent();
+                android.util.Log.v("Key apakah aman? ", currentHtmlText!!);
+            } catch (e: Exception) {
+                android.util.Log.v("ERROR ", e.message!!);
+                Toast.makeText(context, "Kunci dekrip anda salah!", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        buttonValidateSignature.setOnClickListener {
+            try {
+                if(contentMessageHTML == "") {
+                    ParserHTMLText()
+                }
+                parserMark()
+                var signature = keySignature.text
+                android.util.Log.v("Signature apakah aman? ", signature.toString()!!);
+                android.util.Log.v("Content apakah aman? ", contentTanpaMark.trim());
+                android.util.Log.v("Mark apakah aman? ", mark!!);
+                val valid = EccMain.INSTANCE.validate(signature.toString(), contentTanpaMark.trim(), mark)
+
+                val str = "Valid? " + if (valid) "Yes" else "No"
+                Toast.makeText(context, str, Toast.LENGTH_LONG).show()
+                android.util.Log.v("Key apakah aman? ", currentHtmlText!!);
+            } catch (e: Exception) {
+                android.util.Log.v("ERROR ", e.message!!);
+                Toast.makeText(context, "Signature salah! anda salah!", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    fun ParserHTMLText() {
+        var text = currentHtmlText!!;
+        var jarak = text.length;
+        var template = ""
+        var content = ""
+        var isContent = false
+        var menghitung = 6
+
+        for (i in 0..jarak-1) {
+            if(i >= jarak - 7) {
+                template += text[i]
+            } else {
+                var temp = "" + text[i] + text[i+1] + text[i+2] + text[i+3] + text[i+4] + text[i+5]
+                if(temp == "auto\">") {
+                    print(temp)
+                    isContent = true
+                }
+                if(temp == "</div>") {
+                    isContent = false
+                }
+                if(isContent && menghitung == 0) {
+                    content += text[i]
+                } else if(isContent) {
+                    menghitung -= 1
+                    template += text[i]
+                } else {
+                    template += text[i]
+                }
+            }
+        };
+        contentMessageHTML = content;
+        templateMessageHTML = template;
+    }
+
+    fun parserMark() {
+        var content = contentMessageHTML
+        var menghitung = 0
+        var isMark = false
+        var markfungsi = ""
+        var contentTanpaMarkfungsi = ""
+        android.util.Log.v("Fungsi mark apakah aman? ", contentMessageHTML);
+        for (i in 0..content.length-1) {
+            if(i >= content.length - 12) {
+
+            } else {
+                var temp = "" + content[i] + content[i+1] + content[i+2] + content[i+3] + content[i+4] + content[i+5]
+                var temp1 = "" + content[i] + content[i+1] + content[i+2] + content[i+3]
+                if(temp1 == "<br>") {
+                    menghitung = 4
+                }
+                if(temp == "&lt;sp") {
+                    menghitung = 12
+                    isMark = true
+                }
+                if(temp == "&lt;/s") {
+                    isMark = false
+                    menghitung = 12
+                }
+                if(isMark && menghitung == 0) {
+                    markfungsi += content[i]
+                } else if(menghitung > 0) {
+                    menghitung -= 1
+                } else {
+                    contentTanpaMarkfungsi += content[i]
+                }
+            }
+        };
+        android.util.Log.v("Fungsi mark apakah aman? ", markfungsi!!);
+        android.util.Log.v("Fungsi content apakah aman? ", contentTanpaMarkfungsi!!);
+        mark = markfungsi
+        contentTanpaMark = contentTanpaMarkfungsi
+    }
+
+    fun appendMessage() {
+        var template = templateMessageHTML
+        var content = contentMessageHTML
+        var isContent = false
+        var menghitung = 6
+        var tambahkanIsi = ""
+        menghitung = 6
+        for (i in 0..template.length-1) {
+            if(i >= template.length - 7) {
+                tambahkanIsi += template[i]
+            } else {
+                var temp = "" + template[i] + template[i+1] + template[i+2] + template[i+3] + template[i+4] + template[i+5]
+                if(temp == "auto\">") {
+                    isContent = true
+                }
+                if(isContent && menghitung == 0) {
+                    for (j in 0..content.length-1) {
+                        tambahkanIsi += content[j]
+                    }
+                    tambahkanIsi += template[i]
+                    isContent = false
+                } else if(isContent) {
+                    menghitung -= 1
+                    tambahkanIsi += template[i]
+                } else {
+                    tambahkanIsi += template[i]
+                }
+            }
+        };
+        currentHtmlText = tambahkanIsi;
     }
 
     override fun onCreateContextMenu(menu: ContextMenu, view: View, menuInfo: ContextMenuInfo?) {
