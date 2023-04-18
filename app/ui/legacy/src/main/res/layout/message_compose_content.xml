@@ -121,6 +121,55 @@
                 />
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_marginLeft="12dip"
+            android:layout_marginRight="12dip"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:minHeight="50dp">
+
+            <Button
+                android:id="@+id/generate_key"
+                android:text="Generate Key"
+                android:maxWidth="150dp"
+                android:layout_width="wrap_content"
+                android:layout_marginRight="20dp"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/key_public_generated"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="Key public"
+            android:inputType="textEmailSubject|textAutoCorrect|textCapSentences"
+            android:imeOptions="actionNext|flagNoExtractUi"
+            android:singleLine="true"
+            android:background="@android:color/transparent"
+            android:paddingTop="10dp"
+            android:layout_marginLeft="10dp"
+            android:paddingBottom="10dp"
+            android:minLines="3"
+            style="@style/ComposeEditTextLarge"
+            />
+        <TextView
+            android:id="@+id/key_private_generated"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="Key private"
+            android:inputType="textEmailSubject|textAutoCorrect|textCapSentences"
+            android:imeOptions="actionNext|flagNoExtractUi"
+            android:singleLine="true"
+            android:background="@android:color/transparent"
+            android:paddingTop="10dp"
+            android:minLines="3"
+            android:layout_marginLeft="10dp"
+            android:paddingBottom="10dp"
+            style="@style/ComposeEditTextLarge"
+            />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

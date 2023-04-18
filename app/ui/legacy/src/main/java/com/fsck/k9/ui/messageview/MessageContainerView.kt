@@ -138,11 +138,11 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
 
         buttonDekrip.setOnClickListener {
             try {
-                var saes2 = SAES2("abcdefghij123456");
+                var saes2 = SAES2(keyDekrip.getText().toString());
                 ParserHTMLText()
                 android.util.Log.v("Key apakah aman? ", contentMessageHTML);
                 // contentMessageHTML = saes2.decrypt(contentMessageHTML!!);
-                var temp = saes2.decrypt("QwfQAszOvG/xAAZNcCwbUA==");
+                var temp = saes2.decrypt(contentMessageHTML!!);
                 android.util.Log.v("Hasil dekrip aman? ", temp!!);
                 android.util.Log.v("Hasil dekrip aman? ", contentMessageHTML!!);
                 android.util.Log.v("Key apakah aman? ", templateMessageHTML!!);
@@ -168,12 +168,12 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
                 android.util.Log.v("Mark apakah aman? ", mark!!);
                 val valid = EccMain.INSTANCE.validate(signature.toString(), contentTanpaMark.trim(), mark)
 
-                val str = "Valid? " + if (valid) "Yes" else "No"
+                val str = "Tanda tangan dijital adalah " + if (valid) "valid!" else "tidak valid! Hati-hati terhadap pengirim surel ini!"
                 Toast.makeText(context, str, Toast.LENGTH_LONG).show()
                 android.util.Log.v("Key apakah aman? ", currentHtmlText!!);
             } catch (e: Exception) {
                 android.util.Log.v("ERROR ", e.message!!);
-                Toast.makeText(context, "Signature salah! anda salah!", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Signature salah! Hati-hati terhadap pengirim surel ini!", Toast.LENGTH_LONG).show()
             }
         }
     }

@@ -246,7 +246,9 @@ public class MessageCompose extends K9Activity implements OnClickListener,
     private androidx.appcompat.widget.SwitchCompat switchIsEnkrip;
     private androidx.appcompat.widget.SwitchCompat signEmail;
 
-    private EditText keyDekrip;
+    private TextView keyPublicGenerated;
+    private TextView keyPrivateGenerated;
+    private Button generateKey;
 
     private androidx.appcompat.widget.SwitchCompat switchIsDekrip;
     private LinearLayout attachmentsView;
@@ -377,13 +379,7 @@ public class MessageCompose extends K9Activity implements OnClickListener,
             @Override
             public void onClick(View view) {
                 try {
-                    var keyPair = EccMain.INSTANCE.generateKeys();
-                    var publicKey = keyPair.getPublicKey();
-                    var privateKey = keyPair.getPrivateKey();
-                    String strPrivateKey = privateKey.toString();
-                    android.util.Log.v("Key public? ", publicKey.toString());
-                    android.util.Log.v("Key private? ", privateKey.toString());
-                    //String strPrivateKey = keyPublicSignature.getText().toString();
+                    String strPrivateKey = keyPublicSignature.getText().toString();
 
                     String message = messageContentView.getText().toString();
 
@@ -393,6 +389,29 @@ public class MessageCompose extends K9Activity implements OnClickListener,
                     messageContentView.setText(CrLfConverter.toLf(message));
                 } catch (Exception e) {
                     Toast.makeText(themeContext, "Masukkan private key yang benar!", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+        keyPublicGenerated = findViewById(R.id.key_public_generated);
+        keyPrivateGenerated = findViewById(R.id.key_private_generated);
+        generateKey = findViewById(R.id.generate_key);
+        keyPublicGenerated.setTextIsSelectable(true);
+        keyPublicGenerated.setSelectAllOnFocus(true);
+        keyPrivateGenerated.setTextIsSelectable(true);
+        keyPrivateGenerated.setSelectAllOnFocus(true);
+
+        generateKey.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    var keyPair = EccMain.INSTANCE.generateKeys();
+                    var publicKey = keyPair.getPublicKey();
+                    var privateKey = keyPair.getPrivateKey();
+                    keyPublicGenerated.setText(publicKey.toString());
+                    keyPrivateGenerated.setText(privateKey.toString());
+                } catch (Exception e) {
+                    Toast.makeText(themeContext, "Gagal generate public dan private key!", Toast.LENGTH_LONG).show();
                 }
             }
         });
@@ -858,7 +877,7 @@ public class MessageCompose extends K9Activity implements OnClickListener,
         keyEnkrip = findViewById(R.id.key_enkrip);
         Log.v("Key enkrip: ", "MASUKK");
         if(keyEnkrip.getVisibility() == View.VISIBLE) {
-            var saes2 = new SAES2("abcdefghij123456");
+            var saes2 = new SAES2(keyEnkrip.getText().toString());
             var enkrip = saes2.encrypt(messageContentView.getText().toString());
             Log.v("Key enkrip: ", enkrip);
             Log.v("Pesan: ", messageContentView.getText().toString());
