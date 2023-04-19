@@ -877,30 +877,34 @@ public class MessageCompose extends K9Activity implements OnClickListener,
         keyEnkrip = findViewById(R.id.key_enkrip);
         Log.v("Key enkrip: ", "MASUKK");
         if(keyEnkrip.getVisibility() == View.VISIBLE) {
-            var saes2 = new SAES2(keyEnkrip.getText().toString());
-            var enkrip = saes2.encrypt(messageContentView.getText().toString());
-            Log.v("Key enkrip: ", enkrip);
-            Log.v("Pesan: ", messageContentView.getText().toString());
-            builder.setSubject(Utility.stripNewLines(subjectView.getText().toString()))
-                .setSentDate(new Date())
-                .setHideTimeZone(K9.isHideTimeZone())
-                .setInReplyTo(repliedToMessageId)
-                .setReferences(referencedMessageIds)
-                .setRequestReadReceipt(requestReadReceipt)
-                .setIdentity(identity)
-                .setReplyTo(replyToPresenter.getAddresses())
-                .setMessageFormat(currentMessageFormat)
-                .setText(enkrip)
-                .setAttachments(attachmentPresenter.getAttachments())
-                .setInlineAttachments(attachmentPresenter.getInlineAttachments())
-                .setSignature(CrLfConverter.toCrLf(signatureView.getText()))
-                .setSignatureBeforeQuotedText(account.isSignatureBeforeQuotedText())
-                .setIdentityChanged(identityChanged)
-                .setSignatureChanged(signatureChanged)
-                .setCursorPosition(messageContentView.getSelectionStart())
-                .setMessageReference(relatedMessageReference)
-                .setDraft(isDraft)
-                .setIsPgpInlineEnabled(cryptoStatus.isPgpInlineModeEnabled());
+            try {
+                var saes2 = new SAES2(keyEnkrip.getText().toString());
+                var enkrip = saes2.encrypt(messageContentView.getText().toString());
+                Log.v("Key enkrip: ", enkrip);
+                Log.v("Pesan: ", messageContentView.getText().toString());
+                builder.setSubject(Utility.stripNewLines(subjectView.getText().toString()))
+                    .setSentDate(new Date())
+                    .setHideTimeZone(K9.isHideTimeZone())
+                    .setInReplyTo(repliedToMessageId)
+                    .setReferences(referencedMessageIds)
+                    .setRequestReadReceipt(requestReadReceipt)
+                    .setIdentity(identity)
+                    .setReplyTo(replyToPresenter.getAddresses())
+                    .setMessageFormat(currentMessageFormat)
+                    .setText(enkrip)
+                    .setAttachments(attachmentPresenter.getAttachments())
+                    .setInlineAttachments(attachmentPresenter.getInlineAttachments())
+                    .setSignature(CrLfConverter.toCrLf(signatureView.getText()))
+                    .setSignatureBeforeQuotedText(account.isSignatureBeforeQuotedText())
+                    .setIdentityChanged(identityChanged)
+                    .setSignatureChanged(signatureChanged)
+                    .setCursorPosition(messageContentView.getSelectionStart())
+                    .setMessageReference(relatedMessageReference)
+                    .setDraft(isDraft)
+                    .setIsPgpInlineEnabled(cryptoStatus.isPgpInlineModeEnabled());
+            } catch (Exception e) {
+                Toast.makeText(this,"Gagal melakukan enkripsi!", Toast.LENGTH_LONG).show();
+            }
         } else {
             builder.setSubject(Utility.stripNewLines(subjectView.getText().toString()))
                 .setSentDate(new Date())
