@@ -23,11 +23,14 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.browser.browseractions.BrowserActionsIntent.launchIntent
+import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.core.app.ShareCompat.IntentBuilder
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
 import com.fsck.k9.SAES2.SAES2
-
 import com.fsck.k9.contact.ContactIntentHelper
 import com.fsck.k9.custom_encrypt.ecc.EccMain
 import com.fsck.k9.helper.ClipboardManager
@@ -68,6 +71,7 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
 
     private lateinit var keySignature: EditText
     private lateinit var buttonValidateSignature: Button
+    private lateinit var uploadSignature: Button
     private lateinit var switchIsValidate: androidx.appcompat.widget.SwitchCompat
 
     private var isShowingPictures = false
@@ -80,10 +84,18 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
     private val attachments = mutableMapOf<Uri, AttachmentViewInfo>()
     private var attachmentCallback: AttachmentViewCallback? = null
     private var currentAttachmentResolver: AttachmentResolver? = null
+    private val PICK_FILE_REQUEST_CODE = 1
 
     @get:JvmName("hasHiddenExternalImages")
     var hasHiddenExternalImages = false
         private set
+    fun selectFile(view: View) {
+        val intent = Intent(Intent.ACTION_GET_CONTENT)
+        intent.type = "*/*"
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        val chooser = Intent.createChooser(intent, "Pilih file")
+        startActivityIfAvailable(context, chooser)
+    }
 
     public override fun onFinishInflate() {
         super.onFinishInflate()
@@ -124,34 +136,44 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
         keySignature.visibility = View.INVISIBLE;
         buttonValidateSignature = findViewById(R.id.validate_email);
         buttonValidateSignature.visibility = View.INVISIBLE;
+        uploadSignature = findViewById(R.id.upload_signature);
+        uploadSignature.visibility = View.INVISIBLE;
 
         switchIsValidate = findViewById(R.id.validate_receiver_signature);
         switchIsValidate.setOnCheckedChangeListener { buttonView, isChecked ->
             if(isChecked) {
                 keySignature.visibility = View.VISIBLE;
                 buttonValidateSignature.visibility = View.VISIBLE;
+                uploadSignature.visibility = View.VISIBLE;
             } else {
                 keySignature.visibility = View.INVISIBLE;
                 buttonValidateSignature.visibility = View.INVISIBLE;
+                uploadSignature.visibility = View.INVISIBLE;
             }
         }
+
+        uploadSignature.setOnClickListener {
+            val intent = Intent(Intent.ACTION_GET_CONTENT)
+            intent.type = "*/*"
+            intent.addCategory(Intent.CATEGORY_OPENABLE)
+            val intent1 = Intent()
+                .setType("*/*")
+                .setAction(Intent.ACTION_GET_CONTENT)
+            // resultLauncher.launch(Intent.createChooser(intent, "Select a file"))
+        }
+
+
 
         buttonDekrip.setOnClickListener {
             try {
                 var saes2 = SAES2(keyDekrip.getText().toString());
                 ParserHTMLText()
-                android.util.Log.v("Key apakah aman? ", contentMessageHTML);
                 // contentMessageHTML = saes2.decrypt(contentMessageHTML!!);
                 var temp = saes2.decrypt(contentMessageHTML!!);
-                android.util.Log.v("Hasil dekrip aman? ", temp!!);
-                android.util.Log.v("Hasil dekrip aman? ", contentMessageHTML!!);
-                android.util.Log.v("Key apakah aman? ", templateMessageHTML!!);
                 contentMessageHTML = temp;
                 appendMessage();
                 refreshDisplayedContent();
-                android.util.Log.v("Key apakah aman? ", currentHtmlText!!);
             } catch (e: Exception) {
-                android.util.Log.v("ERROR ", e.message!!);
                 Toast.makeText(context, "Kunci dekrip anda salah!", Toast.LENGTH_LONG).show()
             }
         }
@@ -177,6 +199,7 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
             }
         }
     }
+
 
     fun ParserHTMLText() {
         var text = currentHtmlText!!;
