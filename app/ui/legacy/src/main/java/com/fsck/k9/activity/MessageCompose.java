@@ -882,7 +882,7 @@ public class MessageCompose extends K9Activity implements OnClickListener,
                 var enkrip = saes2.encrypt(messageContentView.getText().toString());
                 messageContentView.setText(enkrip);
             } catch (Exception e) {
-                Toast.makeText(this,"Gagal melakukan enkripsi!", Toast.LENGTH_LONG).show();
+                Toast.makeText(this,"Gagal melakukan enkripsi! "+e.getMessage(), Toast.LENGTH_LONG).show();
             }
         }
 
