@@ -191,7 +191,7 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
             try {
                 val html = currentHtmlText ?: ""
                 val parsed = parseHTML(html).replace("<br>", "")
-                val regex = "&lt;mark&gt;(.*?)&lt;/mark&gt;".toRegex()
+                val regex = "__mark__(.*?)__/mark__".toRegex()
                 val matchResult = regex.find(parsed)
                 if (matchResult == null) {
                     Toast.makeText(context, "Tidak ada tanda tangan dijital!", Toast.LENGTH_LONG).show()
@@ -199,7 +199,7 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
                 }
 
                 val resMark = matchResult.groupValues[1]
-                val textWithoutMark = parsed.replace(regex, "").replace("\n", "").replace("&lt;", "<").replace("&gt;", ">")
+                val textWithoutMark = parsed.replace(regex, "").replace("\n", "") //.replace("&lt;", "<").replace("&gt;", ">")
                 val validSign = EccMain.INSTANCE.validate(keySignature.text.toString(), textWithoutMark, resMark)
                 val strToast = "Tanda tangan dijital adalah " + if (validSign) "valid!" else "tidak valid! Hati-hati terhadap pengirim surel ini!"
                 Toast.makeText(context, strToast, Toast.LENGTH_LONG).show()
