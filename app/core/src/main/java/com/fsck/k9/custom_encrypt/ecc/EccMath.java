@@ -19,22 +19,22 @@ public final class EccMath {
   }
 
   public BigInteger tangent(EccPoint point, EccCurve curve) {
-    BigInteger var3 = point.getX();
-    BigInteger var4 = point.getX();
-    BigInteger var10001 = var3.multiply(var4);
-    var3 = var10001;
-    var4 = EccConsts.INSTANCE.getTHREE();
-    var10001 = var3.multiply(var4);
+    BigInteger temp1 = point.getX();
+    BigInteger temp2 = point.getX();
+    BigInteger multiplied = temp1.multiply(temp2);
+    temp1 = multiplied;
+    temp2 = EccConsts.INSTANCE.getTHREE();
+    multiplied = temp1.multiply(temp2);
 
-    var3 = var10001;
-    var4 = curve.getA();
-    var10001 = var3.add(var4);
+    temp1 = multiplied;
+    temp2 = curve.getA();
+    multiplied = temp1.add(temp2);
 
-    var3 = point.getY();
-    var4 = EccConsts.INSTANCE.getTWO();
-    BigInteger var10002 = var3.multiply(var4);
+    temp1 = point.getY();
+    temp2 = EccConsts.INSTANCE.getTWO();
+    BigInteger multiplied2 = temp1.multiply(temp2);
 
-    return this.divide(var10001, var10002, curve.getP());
+    return this.divide(multiplied, multiplied2, curve.getP());
   }
 
   public EccPoint identity(EccPoint point) {
