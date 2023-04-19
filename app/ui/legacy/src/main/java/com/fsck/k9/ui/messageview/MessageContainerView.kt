@@ -29,6 +29,7 @@ import androidx.core.view.isVisible
 import com.fsck.k9.SAES2.SAES2
 import com.fsck.k9.contact.ContactIntentHelper
 import com.fsck.k9.custom_encrypt.ecc.EccMain
+import com.fsck.k9.custom_encrypt.key_store.CryptoManager
 import com.fsck.k9.helper.ClipboardManager
 import com.fsck.k9.helper.Utility
 import com.fsck.k9.mail.Address
@@ -40,6 +41,8 @@ import com.fsck.k9.ui.R
 import com.fsck.k9.view.MessageWebView
 import com.fsck.k9.view.MessageWebView.OnPageFinishedListener
 import com.fsck.k9.view.WebViewConfigProvider
+import java.io.File
+import java.io.FileInputStream
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.qualifier.named
@@ -51,6 +54,7 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
     KoinComponent {
 
     private val TAG = "MALIK/DEBUG"
+    private val cryptoManager: CryptoManager = CryptoManager();
 
     private val displayHtml: DisplayHtml by inject(named("MessageView"))
     private val webViewConfigProvider: WebViewConfigProvider by inject()
@@ -152,12 +156,16 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
         }
 
         uploadSignature.setOnClickListener {
-            val intent = Intent(Intent.ACTION_GET_CONTENT)
-            intent.type = "*/*"
-            intent.addCategory(Intent.CATEGORY_OPENABLE)
-            val intent1 = Intent()
-                .setType("*/*")
-                .setAction(Intent.ACTION_GET_CONTENT)
+            val file = File(context.filesDir, cryptoManager.publicKeyPath)
+
+            if (!file.exists()) {
+                Toast.makeText(context, "Public key belum disimpan", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
+            val fis = FileInputStream(file)
+            val publicKey = cryptoManager.retrieve(fis)
+            keySignature.setText(publicKey)
         }
 
         buttonDekrip.setOnClickListener {
