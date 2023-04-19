@@ -137,6 +137,40 @@
                 android:layout_width="wrap_content"
                 android:layout_marginRight="20dp"
                 android:layout_height="wrap_content" />
+
+            <Button
+                android:id="@+id/store_key"
+                android:text="Store Key"
+                android:maxWidth="150dp"
+                android:layout_width="wrap_content"
+                android:layout_marginRight="20dp"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_marginLeft="12dip"
+            android:layout_marginRight="12dip"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:minHeight="50dp">
+
+            <Button
+                android:id="@+id/use_stored_key"
+                android:text="Get Stored Key"
+                android:maxWidth="150dp"
+                android:layout_width="wrap_content"
+                android:layout_marginRight="20dp"
+                android:layout_height="wrap_content" />
+
+            <Button
+                android:id="@+id/delete_stored_key"
+                android:text="Delete Stored Key"
+                android:maxWidth="150dp"
+                android:layout_width="wrap_content"
+                android:layout_marginRight="20dp"
+                android:layout_height="wrap_content" />
         </LinearLayout>
 
         <TextView

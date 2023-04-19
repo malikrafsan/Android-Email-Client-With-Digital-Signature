@@ -2,6 +2,9 @@ package com.fsck.k9.activity;
 
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
@@ -84,6 +87,7 @@ import com.fsck.k9.controller.SimpleMessagingListener;
 import com.fsck.k9.custom_encrypt.ecc.EccMain;
 import com.fsck.k9.SAES2.SAES2;
 import com.fsck.k9.custom_encrypt.ecc.EccPoint;
+import com.fsck.k9.custom_encrypt.key_store.CryptoManager;
 import com.fsck.k9.fragment.AttachmentDownloadDialogFragment;
 import com.fsck.k9.fragment.AttachmentDownloadDialogFragment.AttachmentDownloadCancelListener;
 import com.fsck.k9.fragment.ProgressDialogFragment;
@@ -241,6 +245,10 @@ public class MessageCompose extends K9Activity implements OnClickListener,
     private Button generateSignature;
     private EditText keyPublicSignature;
 
+    private Button storeKeyBtn;
+    private Button useStoredKeyBtn;
+    private Button deleteStoredKeyBtn;
+
     private EditText keyEnkrip;
 
     private androidx.appcompat.widget.SwitchCompat switchIsEnkrip;
@@ -264,6 +272,7 @@ public class MessageCompose extends K9Activity implements OnClickListener,
     private boolean navigateUp;
 
     private boolean sendMessageHasBeenTriggered = false;
+    private CryptoManager cryptoManager = new CryptoManager();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -373,6 +382,24 @@ public class MessageCompose extends K9Activity implements OnClickListener,
         generateSignature.setVisibility(View.INVISIBLE);
         keyPublicSignature = findViewById(R.id.key_public_signature);
         keyPublicSignature.setVisibility(View.INVISIBLE);
+        keyPublicSignature.addTextChangedListener(new SimpleTextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                var file = new File(getFilesDir(), cryptoManager.getPrivateKeyPath());
+                if (file.exists()) {
+                    try {
+                        var fis1 = new FileInputStream(file);
+                        var privateKey = cryptoManager.retrieve(fis1);
+                        if (!s.toString().equals(privateKey)) {
+                            keyPublicSignature.setText(CrLfConverter.toLf(privateKey));
+                            Toast.makeText(themeContext, "using stored private key", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (Exception e) {
+                        Toast.makeText(themeContext, "Gagal: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        });
 
         signEmail = findViewById(R.id.sign_email);
         generateSignature.setOnClickListener(new View.OnClickListener() {
@@ -392,6 +419,116 @@ public class MessageCompose extends K9Activity implements OnClickListener,
                 }
             }
         });
+
+        useStoredKeyBtn = findViewById(R.id.use_stored_key);
+        deleteStoredKeyBtn = findViewById(R.id.delete_stored_key);
+        storeKeyBtn = findViewById(R.id.store_key);
+
+        storeKeyBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    String strPrivateKey = keyPrivateGenerated.getText().toString();
+                    String strPublicKey = keyPublicGenerated.getText().toString();
+
+                    if (strPrivateKey.isEmpty() || strPublicKey.isEmpty()) {
+                        Toast.makeText(themeContext, "Generate key terlebih dahulu!", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    var file1 = new File(getFilesDir(), cryptoManager.getPrivateKeyPath());
+                    var file2 = new File(getFilesDir(), cryptoManager.getPublicKeyPath());
+
+                    if (!file1.exists()) {
+                        file1.createNewFile();
+                    }
+                    var fos1 = new FileOutputStream(file1);
+                    if (!file2.exists()) {
+                        file2.createNewFile();
+                    }
+                    var fos2 = new FileOutputStream(file2);
+
+                    cryptoManager.store(
+                        strPrivateKey,
+                        fos1
+                    );
+                    cryptoManager.store(
+                        strPublicKey,
+                        fos2
+                    );
+                    Toast.makeText(themeContext, "Keys are successfully stored", Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    Toast.makeText(themeContext, "Gagal: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+        useStoredKeyBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    var file1 = new File(getFilesDir(), "private_key.txt");
+                    var file2 = new File(getFilesDir(), "public_key.txt");
+
+                    if (!file1.exists()) {
+                        Toast.makeText(themeContext, "Private key belum disimpan", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    if (!file2.exists()) {
+                        Toast.makeText(themeContext, "Public key belum disimpan", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    var fis1 = new FileInputStream(file1);
+                    var fis2 = new FileInputStream(file2);
+
+                    var privateKey = cryptoManager.retrieve(fis1);
+                    var publicKey = cryptoManager.retrieve(fis2);
+                    keyPublicGenerated.setText(publicKey);
+                    keyPrivateGenerated.setText(privateKey);
+                    keyPublicSignature.setText(privateKey);
+                    Toast.makeText(themeContext, "Keys are successfully retrived", Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    Toast.makeText(themeContext, "Gagal: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+
+            }
+        });
+
+        deleteStoredKeyBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    var file1 = new File(getFilesDir(), "private_key.txt");
+                    var file2 = new File(getFilesDir(), "public_key.txt");
+
+                    if (!file1.exists()) {
+                        Toast.makeText(themeContext, "Private key belum disimpan", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    if (!file2.exists()) {
+                        Toast.makeText(themeContext, "Public key belum disimpan", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    var res1 = file1.delete();
+                    var res2 = file2.delete();
+                    if (res1 && res2) {
+                        Toast.makeText(themeContext, "Keys are successfully deleted", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(themeContext, "Gagal menghapus keys", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(themeContext, "Gagal: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+        // disable btn
+//        useStoredKeyBtn.setEnabled(false);
+//        deleteStoredKeyBtn.setEnabled(false);
+
+//        storeKeyBtn.setEnabled(false);
 
         keyPublicGenerated = findViewById(R.id.key_public_generated);
         keyPrivateGenerated = findViewById(R.id.key_private_generated);
@@ -420,6 +557,15 @@ public class MessageCompose extends K9Activity implements OnClickListener,
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 keyPublicSignature.setVisibility(isChecked ? View.VISIBLE : View.INVISIBLE);
                 generateSignature.setVisibility(isChecked ? View.VISIBLE : View.INVISIBLE);
+                var file = new File(getFilesDir(), cryptoManager.getPrivateKeyPath());
+                if (file.exists()) {
+                    try {
+                        var strPrivateKey = cryptoManager.retrieve(new FileInputStream(file));
+                        keyPublicSignature.setText(strPrivateKey);
+                    } catch (FileNotFoundException e) {
+                        Toast.makeText(themeContext, "gagal: "+ e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
             }
         });
 
