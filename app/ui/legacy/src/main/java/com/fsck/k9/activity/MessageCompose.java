@@ -383,9 +383,9 @@ public class MessageCompose extends K9Activity implements OnClickListener,
 
                     String message = messageContentView.getText().toString();
                     android.util.Log.v("Key private? ", message.trim());
-                    var signature = EccMain.INSTANCE.sign(strPrivateKey,message.trim());
+                    var signature = EccMain.INSTANCE.sign(strPrivateKey,message.trim().replaceAll("\n", ""));
                     var strSignature = signature.toString();
-                    message = "<msgplain>" + message + "</msgplain>" + "\n" + "\n" + "<mark>" + strSignature + "</mark>";
+                    message = message + "\n\n" + "<mark>" + strSignature + "</mark>";
                     messageContentView.setText(CrLfConverter.toLf(message));
                 } catch (Exception e) {
                     Toast.makeText(themeContext, "Masukkan private key yang benar!", Toast.LENGTH_LONG).show();
