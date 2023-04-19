@@ -23,13 +23,9 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContract
-import androidx.browser.browseractions.BrowserActionsIntent.launchIntent
-import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.core.app.ShareCompat.IntentBuilder
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
-import androidx.fragment.app.Fragment
 import com.fsck.k9.SAES2.SAES2
 import com.fsck.k9.contact.ContactIntentHelper
 import com.fsck.k9.custom_encrypt.ecc.EccMain
@@ -47,11 +43,14 @@ import com.fsck.k9.view.WebViewConfigProvider
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.qualifier.named
+import timber.log.Timber
 
 class MessageContainerView(context: Context, attrs: AttributeSet?) :
     LinearLayout(context, attrs),
     OnCreateContextMenuListener,
     KoinComponent {
+
+    private val TAG = "MALIK/DEBUG"
 
     private val displayHtml: DisplayHtml by inject(named("MessageView"))
     private val webViewConfigProvider: WebViewConfigProvider by inject()
@@ -159,40 +158,38 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
             val intent1 = Intent()
                 .setType("*/*")
                 .setAction(Intent.ACTION_GET_CONTENT)
-            // resultLauncher.launch(Intent.createChooser(intent, "Select a file"))
         }
-
-
 
         buttonDekrip.setOnClickListener {
             try {
+                android.util.Log.v(TAG, contentMessageHTML);
                 var saes2 = SAES2(keyDekrip.getText().toString());
-                ParserHTMLText()
-                // contentMessageHTML = saes2.decrypt(contentMessageHTML!!);
-                var temp = saes2.decrypt(contentMessageHTML!!);
-                contentMessageHTML = temp;
-                appendMessage();
+                val parsed = parseHTML(currentHtmlText!!)
+                val decrypted = saes2.decrypt(parsed)
+
+                val pattern = "<div dir=\"auto\">.*?</div>"
+                val replacement = "<div dir=\"auto\">$decrypted</div>"
+
+                val result = currentHtmlText!!.replace(Regex(pattern), replacement)
+                val replaced = result.replace("\n", "<br>")
+                currentHtmlText = replaced
                 refreshDisplayedContent();
             } catch (e: Exception) {
+                Timber.tag(TAG).e(e, "Error while decrypting message")
                 Toast.makeText(context, "Kunci dekrip anda salah!", Toast.LENGTH_LONG).show()
             }
         }
 
         buttonValidateSignature.setOnClickListener {
             try {
-                if(contentMessageHTML == "") {
-                    ParserHTMLText()
-                }
-                parserMark()
-                var signature = keySignature.text
-                android.util.Log.v("Signature apakah aman? ", signature.toString()!!);
-                android.util.Log.v("Content apakah aman? ", contentTanpaMark.trim());
-                android.util.Log.v("Mark apakah aman? ", mark!!);
-                val valid = EccMain.INSTANCE.validate(signature.toString(), contentTanpaMark.trim(), mark)
-
-                val str = "Tanda tangan dijital adalah " + if (valid) "valid!" else "tidak valid! Hati-hati terhadap pengirim surel ini!"
-                Toast.makeText(context, str, Toast.LENGTH_LONG).show()
-                android.util.Log.v("Key apakah aman? ", currentHtmlText!!);
+                val parsed = parseHTML(currentHtmlText!!).replace("<br>", "")
+                val regex = "&lt;mark&gt;(.*?)&lt;/mark&gt;".toRegex()
+                val matchResult = regex.find(parsed)
+                val resMark = matchResult!!.groupValues[1]
+                val textWithoutMark = parsed.replace(regex, "").replace("\n", "").replace("&lt;", "<").replace("&gt;", ">")
+                val validSign = EccMain.INSTANCE.validate(keySignature.text.toString(), textWithoutMark, resMark)
+                val strToast = "Tanda tangan dijital adalah " + if (validSign) "valid!" else "tidak valid! Hati-hati terhadap pengirim surel ini!"
+                Toast.makeText(context, strToast, Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 android.util.Log.v("ERROR ", e.message!!);
                 Toast.makeText(context, "Signature salah! Hati-hati terhadap pengirim surel ini!", Toast.LENGTH_LONG).show()
@@ -200,110 +197,11 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
         }
     }
 
+    fun parseHTML(text: String): String {
+        val regex = "<body><div dir=\"auto\">(.*?)</div></body>".toRegex()
+        val matchResult = regex.find(text)
 
-    fun ParserHTMLText() {
-        var text = currentHtmlText!!;
-        var jarak = text.length;
-        var template = ""
-        var content = ""
-        var isContent = false
-        var menghitung = 6
-
-        for (i in 0..jarak-1) {
-            if(i >= jarak - 7) {
-                template += text[i]
-            } else {
-                var temp = "" + text[i] + text[i+1] + text[i+2] + text[i+3] + text[i+4] + text[i+5]
-                if(temp == "auto\">") {
-                    print(temp)
-                    isContent = true
-                }
-                if(temp == "</div>") {
-                    isContent = false
-                }
-                if(isContent && menghitung == 0) {
-                    content += text[i]
-                } else if(isContent) {
-                    menghitung -= 1
-                    template += text[i]
-                } else {
-                    template += text[i]
-                }
-            }
-        };
-        contentMessageHTML = content;
-        templateMessageHTML = template;
-    }
-
-    fun parserMark() {
-        var content = contentMessageHTML
-        var menghitung = 0
-        var isMark = false
-        var markfungsi = ""
-        var contentTanpaMarkfungsi = ""
-        android.util.Log.v("Fungsi mark apakah aman? ", contentMessageHTML);
-        for (i in 0..content.length-1) {
-            if(i >= content.length - 12) {
-
-            } else {
-                var temp = "" + content[i] + content[i+1] + content[i+2] + content[i+3] + content[i+4] + content[i+5]
-                var temp1 = "" + content[i] + content[i+1] + content[i+2] + content[i+3]
-                if(temp1 == "<br>") {
-                    menghitung = 4
-                }
-                if(temp == "&lt;sp") {
-                    menghitung = 12
-                    isMark = true
-                }
-                if(temp == "&lt;/s") {
-                    isMark = false
-                    menghitung = 12
-                }
-                if(isMark && menghitung == 0) {
-                    markfungsi += content[i]
-                } else if(menghitung > 0) {
-                    menghitung -= 1
-                } else {
-                    contentTanpaMarkfungsi += content[i]
-                }
-            }
-        };
-        android.util.Log.v("Fungsi mark apakah aman? ", markfungsi!!);
-        android.util.Log.v("Fungsi content apakah aman? ", contentTanpaMarkfungsi!!);
-        mark = markfungsi
-        contentTanpaMark = contentTanpaMarkfungsi
-    }
-
-    fun appendMessage() {
-        var template = templateMessageHTML
-        var content = contentMessageHTML
-        var isContent = false
-        var menghitung = 6
-        var tambahkanIsi = ""
-        menghitung = 6
-        for (i in 0..template.length-1) {
-            if(i >= template.length - 7) {
-                tambahkanIsi += template[i]
-            } else {
-                var temp = "" + template[i] + template[i+1] + template[i+2] + template[i+3] + template[i+4] + template[i+5]
-                if(temp == "auto\">") {
-                    isContent = true
-                }
-                if(isContent && menghitung == 0) {
-                    for (j in 0..content.length-1) {
-                        tambahkanIsi += content[j]
-                    }
-                    tambahkanIsi += template[i]
-                    isContent = false
-                } else if(isContent) {
-                    menghitung -= 1
-                    tambahkanIsi += template[i]
-                } else {
-                    tambahkanIsi += template[i]
-                }
-            }
-        };
-        currentHtmlText = tambahkanIsi;
+        return matchResult!!.groupValues[1]
     }
 
     override fun onCreateContextMenu(menu: ContextMenu, view: View, menuInfo: ContextMenuInfo?) {
