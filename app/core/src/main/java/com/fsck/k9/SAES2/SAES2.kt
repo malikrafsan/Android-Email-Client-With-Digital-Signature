@@ -85,36 +85,34 @@ class SAES2 (rawMasterKey: String) {
     }
 
     fun decrypt(msg: String): String {
-            val decodedMsg = Base64.getDecoder().decode(msg)
-            val chunks = splitIntoChunks(decodedMsg)
-            buffer = chunks.toTypedArray()
-            var result = ""
+        val cleanMsg = msg.replace("[^0-9a-fA-F;]".toRegex(), "F")
+        val plainText = cleanMsg.split(";").map {
+            it.toBigInteger(16)
+        }
 
-            for (i in chunks.indices) {
-                if (i < buffer.size) {
-                    if (i == 0) {
-                        buffer[i] = buffer[i] xor masterKey
-                    } else {
-                        buffer[i] = buffer[i] xor chunks[i - 1]
-                    }
+        val chunks = plainText.toTypedArray()
 
-                    buffer[i] = startDecrypt(buffer[i])
-                    result += buffer[i].toByteArray().toString(Charsets.UTF_8)
-                }
+        var result = ""
+        buffer = chunks.copyOf()
+        for (i in chunks.indices) {
+            if (i == 0) {
+                buffer[i] = buffer[i] xor masterKey
+            } else {
+                buffer[i] = buffer[i] xor chunks[i - 1]
             }
 
-            return unPadMessage(result)
+            buffer[i] = startDecrypt(buffer[i])
+            result += buffer[i].toByteArray().toString(Charsets.UTF_8)
         }
-
+        return unPadMessage(result)
+    }
 
     private fun bufferToText(): String {
-        var bytesArray = buffer[0].toByteArray()
-
-        for (i in 1 until buffer.size) {
-            bytesArray += buffer[i].toByteArray()
+        val res = buffer.map {
+            it.toByteArray().toHex()
         }
 
-        return Base64.getEncoder().encode(bytesArray).toString(Charsets.UTF_8)
+        return res.joinToString(";")
     }
 
     private fun startEncrypt(plainText: BigInteger): BigInteger {
@@ -388,7 +386,10 @@ class SAES2 (rawMasterKey: String) {
 
     private fun splitIntoChunks(byteArray: ByteArray): List<BigInteger> {
         val chunks = byteArray.asList().chunked(blockSize)
-        return chunks.map { chunk -> chunk.toByteArray().convertToBigInt() }
+//        // println("chunks: $chunks")
+        val res = chunks.map { chunk -> chunk.toByteArray().convertToBigInt() }
+        // println("chunks: $res")
+        return res
     }
 
     private fun xTime(a: Int): Int {
@@ -412,13 +413,18 @@ class SAES2 (rawMasterKey: String) {
 
     private fun unPadMessage(msg: String): String {
         val paddingNumber = msg[msg.length - 1].code
+        if (paddingNumber > blockSize) {
+            return msg
+        }
         return msg.substring(0, msg.length - paddingNumber)
     }
 
     private fun String.convertStringToBigInt(): BigInteger {
         val byteArray = this.toByteArray(Charsets.UTF_8)
-        if (byteArray.size != keySize) {
-            throw Error("Key size mismatch, must be 16 bytes")
+        if (byteArray.size < keySize) {
+            byteArray + ByteArray(keySize - byteArray.size) { 0 }
+        } else if (byteArray.size > keySize) {
+            byteArray.sliceArray(0 until keySize)
         }
         return byteArray.toHex().toBigInteger(16)
     }
