@@ -162,7 +162,6 @@ class MessageContainerView(context: Context, attrs: AttributeSet?) :
 
         buttonDekrip.setOnClickListener {
             try {
-                android.util.Log.v(TAG, contentMessageHTML);
                 var saes2 = SAES2(keyDekrip.getText().toString());
                 val parsed = parseHTML(currentHtmlText!!)
                 val decrypted = saes2.decrypt(parsed)
